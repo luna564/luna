@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>타로 카드 뽑기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141024;
+    --deep:#1c1533;
+    --deep2:#2a1f47;
+    --violet:#4b3b6b;
+    --gold:#c9a15c;
+    --gold-soft:#e4c98a;
+    --parchment:#ede6d8;
+    --rose:#a9647a;
+    --line: rgba(201,161,92,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--parchment);
+    font-family:'Noto Serif KR', serif; min-height:100vh;}
+  body{
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(201,161,92,0.10), transparent 60%),
+      radial-gradient(ellipse at 50% 110%, rgba(75,59,107,0.35), transparent 60%),
+      var(--ink);
+  }
+  h1,h2,h3{font-family:'Song Myung', serif; letter-spacing:0.02em; margin:0;}
+  .wrap{max-width:720px;margin:0 auto;padding:28px 18px 60px;}
+  .eyebrow{font-size:12px;color:var(--gold-soft);letter-spacing:0.25em;text-transform:uppercase;margin-bottom:8px;}
+  .title{font-size:26px;color:var(--parchment);margin-bottom:4px;}
+  .sub{font-size:13px;color:#b9aecf;margin-bottom:28px;line-height:1.6;}
+  .card-panel{
+    background:linear-gradient(160deg, var(--deep2), var(--deep));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:20px;
+  }
+  label{display:block;font-size:13px;color:var(--gold-soft);margin:16px 0 8px;letter-spacing:0.03em;}
+  select, input[type=text]{
+    width:100%;background:rgba(0,0,0,0.25);border:1px solid var(--line);
+    color:var(--parchment);padding:11px 12px;border-radius:8px;font-size:15px;
+    font-family:'Noto Serif KR', serif;
+  }
+  .chk-row{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:#d9cfe8;}
+  .btn{
+    display:inline-block;margin-top:18px;padding:12px 22px;border-radius:999px;
+    border:1px solid var(--gold);background:linear-gradient(180deg, var(--gold-soft), var(--gold));
+    color:#241a0c;font-weight:700;font-size:14px;letter-spacing:0.03em;cursor:pointer;
+    font-family:'Noto Serif KR', serif;
+  }
+  .btn.secondary{background:transparent;color:var(--gold-soft);border:1px solid var(--line);font-weight:500;}
+  .btn:disabled{opacity:0.4;cursor:default;}
+  .link-box{display:flex;gap:8px;margin-top:14px;}
+  .link-box input{flex:1;}
+  .hint{font-size:12px;color:#8f84a6;margin-top:10px;line-height:1.6;}
+  .spread-list{display:flex;flex-direction:column;gap:10px;}
+  .spread-opt{
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;transition:0.15s;
+  }
+  .spread-opt:hover{border-color:var(--gold);}
+  .spread-opt.active{border-color:var(--gold);background:rgba(201,161,92,0.08);}
+  .spread-opt .name{font-size:15px;color:var(--parchment);}
+  .spread-opt .desc{font-size:12px;color:#9d92b6;margin-top:2px;}
+
+  /* ---- client view ---- */
+  .deck-zone{display:flex;flex-direction:column;align-items:center;margin:10px 0 34px;}
+  .deck{
+    position:relative;width:104px;height:150px;cursor:pointer;
+    filter:drop-shadow(0 0 22px rgba(201,161,92,0.25));
+  }
+  .deck .back{
+    position:absolute;inset:0;border-radius:10px;
+    background:
+      repeating-linear-gradient(45deg, rgba(201,161,92,0.10) 0 2px, transparent 2px 10px),
+      linear-gradient(160deg, var(--deep2), var(--deep));
+    border:1.5px solid var(--gold);
+  }
+  .deck .back::after{
+    content:"";position:absolute;inset:10px;border:1px solid var(--line);border-radius:6px;
+  }
+  .deck .back::before{
+    content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:22px;color:var(--gold-soft);
+  }
+  .deck .back:nth-child(2){transform:translate(4px,4px);z-index:-1;opacity:0.7;}
+  .deck .back:nth-child(3){transform:translate(8px,8px);z-index:-2;opacity:0.4;}
+  .deck-caption{margin-top:14px;font-size:13px;color:#c8bcdf;text-align:center;}
+  .deck-caption b{color:var(--gold-soft);}
+  .deck.disabled{cursor:default;opacity:0.35;}
+
+  .spread-title{text-align:center;margin-bottom:6px;}
+  .spread-desc{text-align:center;font-size:12px;color:#9d92b6;margin-bottom:26px;}
+
+  .grid-main{
+    display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;
+    gap:10px;max-width:520px;margin:0 auto;
+  }
+  .row3{display:flex;gap:14px;justify-content:center;max-width:520px;margin:0 auto;}
+  .row3 .slot{flex:1;max-width:150px;}
+  .circle-wrap, .heart-wrap{position:relative;width:100%;max-width:420px;aspect-ratio:1/1;margin:0 auto;}
+  .heart-wrap{aspect-ratio:1/1;}
+  .circle-wrap .slot, .heart-wrap .slot{position:absolute;width:78px;transform:translate(-50%,-50%);}
+
+  .slot{position:relative; aspect-ratio:2/3;}
+  .slot .pos-num{
+    position:absolute;top:-9px;left:-9px;width:20px;height:20px;border-radius:50%;
+    background:var(--ink);border:1px solid var(--gold);color:var(--gold-soft);
+    font-size:11px;display:flex;align-items:center;justify-content:center;z-index:3;
+  }
+  .card{
+    position:relative;width:100%;height:100%;border-radius:8px;
+    border:1px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.02);
+  }
+  .card.filled{
+    border:1px solid var(--gold);
+    background:linear-gradient(160deg, #2a2245, #1c1533);
+    flex-direction:column;padding:6px;text-align:center;
+    animation:reveal 0.5s ease;
+  }
+  .card.filled.rev{ transform:none; }
+  .card .cname{font-family:'Song Myung',serif;font-size:12.5px;color:var(--gold-soft);line-height:1.25;}
+  .card .cstate{font-size:9.5px;color:var(--rose);margin-top:2px;letter-spacing:0.05em;}
+  .card .ckw{font-size:9px;color:#c4b8dd;margin-top:5px;line-height:1.35;}
+  @keyframes reveal{from{opacity:0;transform:scale(0.85) rotateY(90deg);}to{opacity:1;transform:none;}}
+
+  .extra-zone{margin-top:30px;text-align:center;}
+  .extra-row{display:flex;gap:14px;justify-content:center;margin-top:16px;max-width:400px;margin-left:auto;margin-right:auto;}
+  .extra-row .slot{flex:1;}
+
+  .footer-note{text-align:center;font-size:11px;color:#726a89;margin-top:40px;line-height:1.7;}
+  .back-link{display:block;text-align:center;margin-top:26px;font-size:12px;color:#9d92b6;}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+
+<script>
+/* ============== 타로 78장 데이터 ============== */
+const MAJOR = [
+ ["바보","새로운 시작, 순수함, 모험","무모함, 경솔함, 방향 상실"],
+ ["마법사","능력, 창조력, 의지","속임수, 능력 오용, 우유부단"],
+ ["여사제","직관, 내면의 지혜, 신비","비밀, 단절된 직관, 혼란"],
+ ["여황제","풍요, 양육, 창조","과잉보호, 침체, 의존"],
+ ["황제","권위, 안정, 구조","경직됨, 통제욕, 독단"],
+ ["교황","전통, 신념, 가르침","관습 탈피, 반항, 새로운 방식"],
+ ["연인","사랑, 조화, 관계","불균형, 갈등, 선택의 어려움"],
+ ["전차","의지, 승리, 추진력","방향 상실, 통제력 부족, 지체"],
+ ["힘","용기, 인내, 내면의 힘","자신감 부족, 나약함, 통제 상실"],
+ ["은둔자","성찰, 고독, 내면 탐구","고립, 외로움, 단절"],
+ ["운명의 수레바퀴","변화, 순환, 기회","불운, 저항, 통제 밖의 변화"],
+ ["정의","균형, 진실, 인과","불공정, 불균형, 책임 회피"],
+ ["매달린 사람","관점의 전환, 기다림, 내려놓음","정체, 저항, 무의미한 희생"],
+ ["죽음","끝과 시작, 변형, 전환","변화에 대한 저항, 정체, 두려움"],
+ ["절제","균형, 조화, 인내","불균형, 과잉, 인내심 부족"],
+ ["악마","속박, 유혹, 집착","해방, 자각, 속박에서 벗어남"],
+ ["타워","급격한 변화, 붕괴, 각성","변화에 대한 두려움, 지연된 붕괴"],
+ ["별","희망, 영감, 치유","실망, 자신감 상실, 방향 상실"],
+ ["달","무의식, 불안, 환상","혼란 해소, 두려움 극복, 명료함"],
+ ["태양","성공, 활력, 긍정","일시적 좌절, 과도한 낙관"],
+ ["심판","각성, 재평가, 결단","자기 의심, 후회, 결정 회피"],
+ ["세계","완성, 성취, 통합","미완성, 지연, 마무리 부족"]
+].map(([n,u,r])=>({name:n,up:u,rev:r}));
+
+const SUITS = [
+ {name:"완드", theme:"행동과 열정"},
+ {name:"컵", theme:"감정과 관계"},
+ {name:"소드", theme:"생각과 갈등"},
+ {name:"펜타클", theme:"현실과 물질"}
+];
+const RANKS = [
+ ["에이스","새로운 시작","기회를 놓침"],
+ ["2","균형과 선택","결정 지연"],
+ ["3","성장과 협력","불협화음"],
+ ["4","안정과 휴식","침체"],
+ ["5","갈등과 변화","갈등 해소 지연"],
+ ["6","조화와 나눔","과거에 머묾"],
+ ["7","평가와 인내","포기"],
+ ["8","속도와 집중","분산"],
+ ["9","성찰, 마무리 직전","불안"],
+ ["10","완성과 결실","과부하"],
+ ["시종","배움과 전달","미숙함"],
+ ["기사","행동과 추진","조급함"],
+ ["여왕","성숙한 감성적 숙련","감정 기복"],
+ ["왕","권위와 완숙","독단적 태도"]
+];
+function buildMinor(){
+  const out=[];
+  SUITS.forEach(s=>RANKS.forEach(([rn,u,r])=>{
+    out.push({name:`${s.name} ${rn}`, up:`${u} (${s.theme})`, rev:`${r} (${s.theme} 관련)`});
+  }));
+  return out;
+}
+const DECK = [...MAJOR, ...buildMinor()]; // 78장
+
+/* ============== 시드 기반 난수 ============== */
+function hashSeed(str){
+  let h=1779033703^str.length;
+  for(let i=0;i<str.length;i++){
+    h=Math.imul(h^str.charCodeAt(i),3432918353);
+    h=(h<<13)|(h>>>19);
+  }
+  return function(){
+    h=Math.imul(h^(h>>>16),2246822507);
+    h=Math.imul(h^(h>>>13),3266489909);
+    return (h^=(h>>>16))>>>0;
+  };
+}
+function mulberry32(seedInt){
+  let a=seedInt;
+  return function(){
+    a|=0; a=(a+0x6D2B79F5)|0;
+    let t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+function makeRng(seedStr){
+  const gen=hashSeed(seedStr);
+  return mulberry32(gen());
+}
+function seededShuffle(arr, rng){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(rng()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+/* ============== 배열법 정의 ============== */
+const SPREADS = {
+  main9: {
+    name:"메인 9카드 배열",
+    desc:"숫자 순서대로 채워지는 기본 배열입니다.",
+    count:9, layout:"grid",
+    slots:[
+      {id:1,col:1,row:1},{id:2,col:2,row:1},
+      {id:3,col:1,row:2},{id:4,col:2,row:2},{id:5,col:3,row:2},{id:8,col:4,row:2},
+      {id:6,col:1,row:3},{id:7,col:2,row:3},{id:9,col:3,row:3}
+    ],
+    extraCount:3
+  },
+  three:{
+    name:"기본 3카드 배열",
+    desc:"과거 · 현재 · 미래의 흐름을 봅니다.",
+    count:3, layout:"row",
+    slots:[{id:1,label:"과거"},{id:2,label:"현재"},{id:3,label:"미래"}]
+  },
+  houses12:{
+    name:"점성학 12하우스 배열",
+    desc:"12개의 영역을 원형으로 살펴봅니다.",
+    count:12, layout:"circle"
+  },
+  heart11:{
+    name:"하트 배열",
+    desc:"관계 · 마음의 흐름을 하트 모양으로 살펴봅니다.",
+    count:11, layout:"heart",
+    slots:[
+      {id:1,x:42,y:12},{id:2,x:58,y:12},
+      {id:3,x:24,y:18},{id:4,x:76,y:18},
+      {id:5,x:11,y:38},{id:6,x:89,y:38},
+      {id:7,x:16,y:60},{id:8,x:84,y:60},
+      {id:9,x:29,y:79},{id:10,x:71,y:79},
+      {id:11,x:50,y:93}
+    ]
+  }
+};
+
+/* ============== 라우팅 ============== */
+const params = new URLSearchParams(location.search);
+const app = document.getElementById('app');
+
+if(params.has('spread') && SPREADS[params.get('spread')]){
+  renderClient(params.get('spread'), params.get('seed')||'default', params.get('extra')==='1');
+}else{
+  renderAdmin();
+}
+
+/* ============== 상담사(관리자) 화면 ============== */
+function renderAdmin(){
+  let selected = 'main9';
+  let includeExtra = true;
+
+  app.innerHTML = `
+    <div class="eyebrow">TAROT SESSION LINK</div>
+    <div class="title">상담용 카드뽑기 링크 만들기</div>
+    <div class="sub">질문 유형에 맞는 배열법을 고른 뒤 링크를 생성해서 고객에게 전달하세요.<br>
+    링크는 매번 새로 생성되며, 이전 링크와 카드 순서가 겹치지 않습니다.</div>
+
+    <div class="card-panel">
+      <label>배열법 선택</label>
+      <div class="spread-list" id="spreadList"></div>
+
+      <div id="extraToggle" class="chk-row" style="display:none">
+        <input type="checkbox" id="extraChk" checked>
+        <label style="margin:0" for="extraChk">추가 3장 뽑기 옵션 포함</label>
+      </div>
+
+      <button class="btn" id="genBtn">링크 생성</button>
+
+      <div id="linkOut" style="display:none">
+        <div class="link-box">
+          <input type="text" id="linkField" readonly>
+          <button class="btn secondary" id="copyBtn">복사</button>
+        </div>
+        <div class="hint">이 링크를 채팅/문자로 고객에게 보내세요. 고객이 링크를 열면 바로 카드를 뽑을 수 있습니다.</div>
+      </div>
+    </div>
+
+    <div class="hint">※ 이 파일은 서버 없이 동작하는 정적 웹앱입니다. 실제로 고객에게 링크를 보내려면 이 파일을 웹에 업로드(예: GitHub Pages, Netlify, 개인 서버 등)해서 URL을 확보해야 합니다.</div>
+  `;
+
+  const listEl = document.getElementById('spreadList');
+  Object.entries(SPREADS).forEach(([key,s])=>{
+    const div = document.createElement('div');
+    div.className = 'spread-opt'+(key===selected?' active':'');
+    div.dataset.key = key;
+    div.innerHTML = `<div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div><div style="color:var(--gold-soft);font-size:12px">${s.count}장</div>`;
+    div.onclick = ()=>{
+      selected = key;
+      [...listEl.children].forEach(c=>c.classList.remove('active'));
+      div.classList.add('active');
+      document.getElementById('extraToggle').style.display = (key==='main9') ? 'flex' : 'none';
+      document.getElementById('linkOut').style.display='none';
+    };
+    listEl.appendChild(div);
+  });
+  document.getElementById('extraToggle').style.display = 'flex';
+
+  document.getElementById('genBtn').onclick = ()=>{
+    includeExtra = document.getElementById('extraChk') ? document.getElementById('extraChk').checked : false;
+    const seed = Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+    const url = new URL(location.href);
+    url.search = '';
+    url.searchParams.set('spread', selected);
+    url.searchParams.set('seed', seed);
+    if(selected==='main9' && includeExtra) url.searchParams.set('extra','1');
+    document.getElementById('linkField').value = url.toString();
+    document.getElementById('linkOut').style.display = 'block';
+  };
+
+  document.getElementById('linkOut').addEventListener('click', (e)=>{
+    if(e.target.id==='copyBtn'){
+      const field = document.getElementById('linkField');
+      field.select();
+      navigator.clipboard && navigator.clipboard.writeText(field.value);
+      e.target.textContent = '복사됨';
+      setTimeout(()=>{e.target.textContent='복사';},1200);
+    }
+  });
+}
+
+/* ============== 고객 화면 ============== */
+function renderClient(spreadKey, seed, withExtra){
+  const spread = SPREADS[spreadKey];
+  const rng = makeRng(seed+':'+spreadKey);
+  const shuffled = seededShuffle(DECK, rng);
+  const reversedFlags = DECK.map(()=> rng() < 0.5);
+
+  let drawIndex = 0; // shuffled 배열에서 다음 뽑을 인덱스
+  let filledMain = 0;
+  let filledExtra = 0;
+
+  app.innerHTML = `
+    <div class="eyebrow" style="text-align:center">TAROT READING</div>
+    <h2 class="spread-title">${spread.name}</h2>
+    <div class="spread-desc">${spread.desc}</div>
+
+    <div class="deck-zone">
+      <div class="deck" id="deckEl">
+        <div class="back"></div><div class="back"></div><div class="back"></div>
+      </div>
+      <div class="deck-caption" id="deckCaption">카드를 눌러 <b>1번</b> 자리부터 뽑아주세요</div>
+    </div>
+
+    <div id="spreadArea"></div>
+    <div id="extraArea"></div>
+
+    <div class="footer-note">같은 링크를 다시 열어도 동일한 카드 순서가 나옵니다.</div>
+    <a class="back-link" href="${location.pathname}">✦ 새 세션 링크 만들기 (상담사용)</a>
+  `;
+
+  const area = document.getElementById('spreadArea');
+  area.appendChild(buildLayout(spread));
+
+  let extraContainer = null;
+  if(spreadKey==='main9' && withExtra){
+    const extraWrap = document.createElement('div');
+    extraWrap.className='extra-zone';
+    extraWrap.innerHTML = `<button class="btn secondary" id="extraBtn" disabled>추가 3장 뽑기</button>`;
+    document.getElementById('extraArea').appendChild(extraWrap);
+    const row = document.createElement('div');
+    row.className='extra-row';
+    for(let i=0;i<spread.extraCount;i++){
+      const s = document.createElement('div');
+      s.className='slot';
+      s.innerHTML = `<div class="pos-num">${spread.count+i+1}</div><div class="card" data-slot="extra-${i}"></div>`;
+      row.appendChild(s);
+    }
+    document.getElementById('extraArea').appendChild(row);
+    extraContainer = row;
+  }
+
+  const deckEl = document.getElementById('deckEl');
+  const caption = document.getElementById('deckCaption');
+
+  deckEl.onclick = ()=>{
+    if(filledMain < spread.count){
+      const slotEl = area.querySelector(`.card[data-slot="${filledMain+1}"]`);
+      revealInto(slotEl);
+      filledMain++;
+      if(filledMain < spread.count){
+        caption.innerHTML = `카드를 눌러 <b>${filledMain+1}번</b> 자리를 뽑아주세요`;
+      }else{
+        if(extraContainer){
+          caption.innerHTML = `9장이 모두 나왔습니다. 필요하면 아래에서 추가 3장을 뽑을 수 있어요.`;
+          document.getElementById('extraBtn').disabled = false;
+        }else{
+          caption.textContent = '모든 카드가 나왔습니다.';
+          deckEl.classList.add('disabled');
+        }
+      }
+    }
+  };
+
+  if(extraContainer){
+    document.getElementById('extraArea').addEventListener('click', (e)=>{
+      if(e.target.id==='extraBtn' && filledMain>=spread.count && filledExtra<spread.extraCount){
+        const slotEl = extraContainer.querySelector(`.card[data-slot="extra-${filledExtra}"]`);
+        revealInto(slotEl);
+        filledExtra++;
+        if(filledExtra>=spread.extraCount){
+          e.target.disabled = true;
+          e.target.textContent = '완료';
+          deckEl.classList.add('disabled');
+          caption.textContent = '모든 카드가 나왔습니다.';
+        }
+      }
+    });
+  }
+
+  function revealInto(slotEl){
+    if(!slotEl) return;
+    const card = shuffled[drawIndex];
+    const isRev = reversedFlags[drawIndex];
+    drawIndex++;
+    slotEl.classList.add('filled');
+    if(isRev) slotEl.classList.add('rev');
+    slotEl.innerHTML = `
+      <div class="cname">${card.name}${isRev?' (역방향)':''}</div>
+      <div class="cstate">${isRev?'REVERSED':'UPRIGHT'}</div>
+      <div class="ckw">${isRev?card.rev:card.up}</div>
+    `;
+  }
+}
+
+/* ============== 레이아웃 빌더 ============== */
+function buildLayout(spread){
+  if(spread.layout==='grid'){
+    const grid = document.createElement('div');
+    grid.className='grid-main';
+    spread.slots.forEach(sl=>{
+      const wrap = document.createElement('div');
+      wrap.className='slot';
+      wrap.style.gridColumn = sl.col;
+      wrap.style.gridRow = sl.row;
+      wrap.innerHTML = `<div class="pos-num">${sl.id}</div><div class="card" data-slot="${sl.id}"></div>`;
+      grid.appendChild(wrap);
+    });
+    return grid;
+  }
+  if(spread.layout==='row'){
+    const row = document.createElement('div');
+    row.className='row3';
+    spread.slots.forEach(sl=>{
+      const wrap = document.createElement('div');
+      wrap.className='slot';
+      wrap.innerHTML = `<div class="pos-num">${sl.id}</div><div class="card" data-slot="${sl.id}"></div>
+        <div style="text-align:center;font-size:11px;color:#9d92b6;margin-top:6px">${sl.label}</div>`;
+      row.appendChild(wrap);
+    });
+    return row;
+  }
+  if(spread.layout==='heart'){
+    const wrap = document.createElement('div');
+    wrap.className='heart-wrap';
+    spread.slots.forEach(sl=>{
+      const s = document.createElement('div');
+      s.className='slot';
+      s.style.left = sl.x+'%';
+      s.style.top = sl.y+'%';
+      s.innerHTML = `<div class="pos-num">${sl.id}</div><div class="card" data-slot="${sl.id}"></div>`;
+      wrap.appendChild(s);
+    });
+    return wrap;
+  }
+  if(spread.layout==='circle'){
+    const wrap = document.createElement('div');
+    wrap.className='circle-wrap';
+    const n = 12, r = 42;
+    for(let i=1;i<=n;i++){
+      const angle = (-90 + (i-1)*(360/n)) * Math.PI/180;
+      const x = 50 + r*Math.cos(angle);
+      const y = 50 + r*Math.sin(angle);
+      const s = document.createElement('div');
+      s.className='slot';
+      s.style.left = x+'%';
+      s.style.top = y+'%';
+      s.innerHTML = `<div class="pos-num">${i}</div><div class="card" data-slot="${i}"></div>`;
+      wrap.appendChild(s);
+    }
+    return wrap;
+  }
+}
+</script>
+</body>
+</html>
